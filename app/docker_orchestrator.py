@@ -14,24 +14,31 @@ class DockerOrchestrator:
     """Handles Docker operations for building and running containers"""
     
     def __init__(self):
-        """Initialize Docker client"""
-        try:
-            # Use DockerClient with explicit base_url to avoid http+docker scheme issues
-            # docker.from_env() can fail with newer docker library versions
-            docker_host = os.environ.get('DOCKER_HOST', 'unix:///var/run/docker.sock')
-            
-            # Ensure proper URL format
-            if docker_host.startswith('unix://'):
-                base_url = docker_host
-            elif docker_host.startswith('/'):
-                base_url = f'unix://{docker_host}'
-            else:
-                base_url = docker_host
-            
-            self.client = docker.DockerClient(base_url=base_url)
-        except Exception as e:
-            logger.error(f"Failed to initialize Docker client: {e}")
-            raise
+        """Initialize orchestrator with lazy Docker client initialization"""
+        self._client = None
+    
+    @property
+    def client(self):
+        """Lazy initialization of Docker client"""
+        if self._client is None:
+            try:
+                # Use DockerClient with explicit base_url to avoid http+docker scheme issues
+                # docker.from_env() can fail with newer docker library versions
+                docker_host = os.environ.get('DOCKER_HOST', 'unix:///var/run/docker.sock')
+                
+                # Ensure proper URL format
+                if docker_host.startswith('unix://'):
+                    base_url = docker_host
+                elif docker_host.startswith('/'):
+                    base_url = f'unix://{docker_host}'
+                else:
+                    base_url = docker_host
+                
+                self._client = docker.DockerClient(base_url=base_url)
+            except Exception as e:
+                logger.error(f"Failed to initialize Docker client: {e}")
+                raise
+        return self._client
     
     def build_image(self, repo_path: str, dockerfile_content: str, tag: str) -> Tuple[bool, str]:
         """
