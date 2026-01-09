@@ -31,6 +31,7 @@ class DockerfileGenerator:
 WORKDIR /app
 
 # Install system dependencies
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \\
     git \\
     && rm -rf /var/lib/apt/lists/*
@@ -73,6 +74,7 @@ CMD ["python", "-m", "http.server", "8000"]
 WORKDIR /app
 
 # Install git
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \\
     git \\
     && rm -rf /var/lib/apt/lists/*
