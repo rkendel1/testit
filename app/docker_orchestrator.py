@@ -1,6 +1,7 @@
 import docker
 import logging
 import os
+import threading
 from typing import Optional, Tuple, Dict
 from pathlib import Path
 from app.config import get_settings
@@ -17,12 +18,16 @@ class DockerOrchestrator:
     def __init__(self):
         """Initialize orchestrator with lazy Docker client initialization"""
         self._client = None
+        self._client_lock = threading.Lock()
     
     @property
     def client(self):
-        """Lazy initialization of Docker client"""
+        """Lazy initialization of Docker client (thread-safe)"""
         if self._client is None:
-            self._client = create_docker_client()
+            with self._client_lock:
+                # Double-check locking pattern
+                if self._client is None:
+                    self._client = create_docker_client()
         return self._client
     
     def build_image(self, repo_path: str, dockerfile_content: str, tag: str) -> Tuple[bool, str]:

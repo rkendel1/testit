@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import threading
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Optional
 import docker
@@ -16,12 +17,16 @@ class TerminalManager:
     def __init__(self):
         """Initialize manager with lazy Docker client initialization"""
         self._docker_client = None
+        self._docker_client_lock = threading.Lock()
     
     @property
     def docker_client(self):
-        """Lazy initialization of Docker client"""
+        """Lazy initialization of Docker client (thread-safe)"""
         if self._docker_client is None:
-            self._docker_client = create_docker_client()
+            with self._docker_client_lock:
+                # Double-check locking pattern
+                if self._docker_client is None:
+                    self._docker_client = create_docker_client()
         return self._docker_client
     
     async def handle_terminal_session(self, websocket: WebSocket, container_id: str):
