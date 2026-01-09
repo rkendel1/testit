@@ -20,3 +20,11 @@ celery_app.conf.update(
     task_time_limit=600,  # 10 minutes
     task_soft_time_limit=540,  # 9 minutes
 )
+
+# Configure periodic tasks
+celery_app.conf.beat_schedule = {
+    'cleanup-expired-sessions': {
+        'task': 'app.tasks.periodic_cleanup_task',
+        'schedule': settings.session_cleanup_interval_minutes * 60.0,  # Run every N minutes
+    },
+}

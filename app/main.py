@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from celery.result import AsyncResult
 from typing import List
 import logging
@@ -17,6 +18,7 @@ from app.celery_app import celery_app
 from app.tasks import process_repository, cleanup_session_task
 from app.session_manager import SessionManager
 from app.docker_orchestrator import DockerOrchestrator
+from app.terminal_manager import TerminalManager
 
 # Configure logging
 logging.basicConfig(
@@ -33,6 +35,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Add CORS middleware for frontend access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify actual frontend origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize terminal manager
+terminal_manager = TerminalManager()
+
 
 @app.get("/")
 async def root():
@@ -40,11 +54,13 @@ async def root():
     return {
         "message": "TestIt API - Ephemeral Container Build System",
         "version": "1.0.0",
+        "description": "Submit GitHub repos, get ephemeral containers with browser terminal access",
         "endpoints": {
             "submit": "POST /api/submit",
             "status": "GET /api/status/{task_id}",
             "sessions": "GET /api/sessions",
             "session": "GET /api/sessions/{session_id}",
+            "terminal": "WS /api/terminal/{session_id}",
             "stop_session": "DELETE /api/sessions/{session_id}"
         }
     }
@@ -261,6 +277,50 @@ async def trigger_cleanup():
     except Exception as e:
         logger.error(f"Error triggering cleanup: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to trigger cleanup: {str(e)}")
+
+
+@app.websocket("/api/terminal/{session_id}")
+async def terminal_websocket(websocket: WebSocket, session_id: str):
+    """
+    WebSocket endpoint for terminal access to a container
+    
+    Provides xterm.js compatible WebSocket terminal access
+    """
+    try:
+        # Get session to verify it exists and get container ID
+        session_manager = SessionManager()
+        session = session_manager.get_session(session_id)
+        
+        if not session:
+            await websocket.accept()
+            await websocket.send_text("Error: Session not found\r\n")
+            await websocket.close()
+            return
+        
+        container_id = session["container_id"]
+        
+        # Verify container is running
+        orchestrator = DockerOrchestrator()
+        exists, status = orchestrator.get_container_status(container_id)
+        
+        if not exists or status != "running":
+            await websocket.accept()
+            await websocket.send_text(f"Error: Container is not running (status: {status})\r\n")
+            await websocket.close()
+            return
+        
+        # Handle the terminal session
+        logger.info(f"Starting terminal session for {session_id} (container: {container_id})")
+        await terminal_manager.handle_terminal_session(websocket, container_id)
+        
+    except Exception as e:
+        logger.error(f"Error in terminal WebSocket: {e}", exc_info=True)
+        try:
+            await websocket.accept()
+            await websocket.send_text(f"Error: {str(e)}\r\n")
+            await websocket.close()
+        except:
+            pass
 
 
 if __name__ == "__main__":

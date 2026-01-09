@@ -36,5 +36,17 @@ services:
       - redis
     command: celery -A app.celery_app worker --loglevel=info
 
+  celery-beat:
+    build: .
+    volumes:
+      - ./app:/app/app
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    command: celery -A app.celery_app beat --loglevel=info
+
 volumes:
   redis-data:
