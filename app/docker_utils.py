@@ -19,19 +19,10 @@ def create_docker_client():
         Exception: If Docker client initialization fails
     """
     try:
-        # Use DockerClient with explicit base_url to avoid http+docker scheme issues
-        # docker.from_env() can fail with newer docker library versions
-        docker_host = os.environ.get('DOCKER_HOST', 'unix:///var/run/docker.sock')
-        
-        # Ensure proper URL format
-        if docker_host.startswith('unix://'):
-            base_url = docker_host
-        elif docker_host.startswith('/'):
-            base_url = f'unix://{docker_host}'
-        else:
-            base_url = docker_host
-        
-        return docker.DockerClient(base_url=base_url)
+        # Use docker.from_env() which properly handles the DOCKER_HOST environment variable
+        # and avoids the http+docker URL scheme issue present in docker-py 7.x versions
+        # when using docker.DockerClient(base_url=...)
+        return docker.from_env()
     except Exception as e:
         logger.error(f"Failed to initialize Docker client: {e}")
         raise
