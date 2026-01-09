@@ -66,11 +66,11 @@ docker-compose up --build
 ```
 
 3. Access the application:
+- Frontend UI: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
-- Frontend: See frontend setup below
 
-### Running Frontend Separately
+### Running Frontend Separately (Development)
 
 1. Navigate to the frontend directory:
 ```bash
