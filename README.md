@@ -309,6 +309,24 @@ testit/
 
 ## 🐛 Troubleshooting
 
+### Frontend-Backend Connection Issues
+
+**Symptoms:**
+- `curl: Connection refused` or `Connection reset by peer`
+- Frontend shows "✗ Unavailable" status
+- Error: "504: Error occurred while trying to proxy"
+
+**Solution**: See [FRONTEND_BACKEND_CONNECTION_FIX.md](FRONTEND_BACKEND_CONNECTION_FIX.md) for detailed troubleshooting steps.
+
+**Quick Fix:**
+```bash
+# Ensure backend is running
+docker compose up -d api
+
+# Verify health
+curl http://localhost:8000/health
+```
+
 ### Container fails to build
 - Check build logs in the status response
 - Verify the repository has dependency files
@@ -323,6 +341,10 @@ testit/
 - Check Redis connection
 - Verify Celery worker is running
 - Manually trigger cleanup: `POST /api/cleanup`
+
+**For more troubleshooting help**, see:
+- [NETWORK_TROUBLESHOOTING.md](NETWORK_TROUBLESHOOTING.md) - Network and CORS issues
+- [FRONTEND_BACKEND_CONNECTION_FIX.md](FRONTEND_BACKEND_CONNECTION_FIX.md) - Connection problems
 
 ## 📄 License
 
