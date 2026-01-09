@@ -5,7 +5,7 @@ import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
 import './Terminal.css';
 
-const TerminalComponent = ({ sessionId, apiUrl }) => {
+const TerminalComponent = ({ sessionId }) => {
   const terminalRef = useRef(null);
   const [terminal, setTerminal] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -54,26 +54,10 @@ const TerminalComponent = ({ sessionId, apiUrl }) => {
   useEffect(() => {
     if (!terminal || !sessionId) return;
 
-    // Connect to WebSocket
-    // Construct WebSocket URL based on the API URL
-    let wsUrl;
-    
-    // Parse the API URL to get the hostname and port
-    try {
-      const apiUrlObj = new URL(apiUrl);
-      const wsProtocol = apiUrlObj.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = apiUrlObj.host; // includes port if present
-      wsUrl = `${wsProtocol}//${host}/api/terminal/${sessionId}`;
-    } catch (e) {
-      // Fallback for malformed URLs
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsHost = apiUrl.replace('http://', '').replace('https://', '');
-      wsUrl = `${wsProtocol}//${wsHost}/api/terminal/${sessionId}`;
-    }
-
+    // Connect to WebSocket using relative URL (proxied by nginx)
     terminal.writeln('Connecting to container terminal...');
 
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`/api/terminal/${sessionId}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -113,7 +97,7 @@ const TerminalComponent = ({ sessionId, apiUrl }) => {
         ws.close();
       }
     };
-  }, [terminal, sessionId, apiUrl]);
+  }, [terminal, sessionId]);
 
   return (
     <div className="terminal-container">

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './App.css';
 import TerminalComponent from './Terminal';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 function App() {
   const [repoUrl, setRepoUrl] = useState('');
@@ -18,7 +18,7 @@ function App() {
   React.useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch(`${API_URL}/health`, { 
+        const response = await fetch(`/health`, { 
           method: 'GET',
           signal: AbortSignal.timeout(5000) // 5 second timeout
         });
@@ -43,7 +43,7 @@ function App() {
     setLogs('');
 
     try {
-      const response = await fetch(`${API_URL}/api/submit`, {
+      const response = await fetch(`/api/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ function App() {
       
       // Provide more helpful error messages for common issues
       if (err.message.includes('Failed to fetch')) {
-        errorMsg = 'Cannot connect to backend API. Please ensure the API is running at ' + API_URL;
+        errorMsg = 'Cannot connect to backend API. Please ensure the API is running';
       } else if (err.message.includes('CORS')) {
         errorMsg = 'CORS error: ' + err.message;
       }
@@ -81,7 +81,7 @@ function App() {
   const pollStatus = async (id) => {
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`${API_URL}/api/status/${id}`);
+        const response = await fetch(`/api/status/${id}`);
         if (!response.ok) {
           throw new Error(`Failed to get status (${response.status})`);
         }
@@ -115,7 +115,7 @@ function App() {
     if (!sessionId) return;
 
     try {
-      await fetch(`${API_URL}/api/sessions/${sessionId}`, {
+      await fetch(`/api/sessions/${sessionId}`, {
         method: 'DELETE',
       });
       
