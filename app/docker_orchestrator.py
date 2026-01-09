@@ -1,5 +1,6 @@
 import docker
 import logging
+import os
 from typing import Optional, Tuple, Dict
 from pathlib import Path
 from app.config import get_settings
@@ -17,7 +18,6 @@ class DockerOrchestrator:
         try:
             # Use DockerClient with explicit base_url to avoid http+docker scheme issues
             # docker.from_env() can fail with newer docker library versions
-            import os
             docker_host = os.environ.get('DOCKER_HOST', 'unix:///var/run/docker.sock')
             
             # Ensure proper URL format

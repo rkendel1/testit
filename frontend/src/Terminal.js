@@ -72,7 +72,6 @@ const TerminalComponent = ({ sessionId, apiUrl }) => {
     }
 
     terminal.writeln('Connecting to container terminal...');
-    terminal.writeln(`WebSocket URL: ${wsUrl}\r\n`);
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
