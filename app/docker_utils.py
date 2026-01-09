@@ -20,7 +20,7 @@ def create_docker_client():
     """
     try:
         # Use docker.from_env() which properly handles the DOCKER_HOST environment variable
-        # and avoids the http+docker URL scheme issue present in docker==7.0.0
+        # and avoids the http+docker URL scheme issue present in docker-py 7.x versions
         # when using docker.DockerClient(base_url=...)
         return docker.from_env()
     except Exception as e:
