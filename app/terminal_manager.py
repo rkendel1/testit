@@ -11,7 +11,25 @@ class TerminalManager:
     """Manages WebSocket connections to container terminals"""
     
     def __init__(self):
-        self.docker_client = docker.from_env()
+        """Initialize Docker client"""
+        try:
+            # Use DockerClient with explicit base_url to avoid http+docker scheme issues
+            # docker.from_env() can fail with newer docker library versions
+            import os
+            docker_host = os.environ.get('DOCKER_HOST', 'unix:///var/run/docker.sock')
+            
+            # Ensure proper URL format
+            if docker_host.startswith('unix://'):
+                base_url = docker_host
+            elif docker_host.startswith('/'):
+                base_url = f'unix://{docker_host}'
+            else:
+                base_url = docker_host
+            
+            self.docker_client = docker.DockerClient(base_url=base_url)
+        except Exception as e:
+            logger.error(f"Failed to initialize Docker client: {e}")
+            raise
     
     async def handle_terminal_session(self, websocket: WebSocket, container_id: str):
         """

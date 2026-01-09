@@ -53,5 +53,22 @@ services:
       - redis
     command: celery -A app.celery_app beat --loglevel=info
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api
+    stdin_open: true
+    tty: true
+
 volumes:
   redis-data:
