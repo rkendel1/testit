@@ -157,6 +157,10 @@ class DockerOrchestrator:
         """
         Cleanup containers managed by testit
         
+        NOTE: This method cleans up ALL containers with the testit label.
+        For production, this should integrate with SessionManager to only
+        cleanup truly expired sessions.
+        
         Returns:
             Number of containers cleaned up
         """
@@ -169,6 +173,7 @@ class DockerOrchestrator:
             count = 0
             for container in containers:
                 try:
+                    # TODO: Check session expiration before cleanup
                     container.stop(timeout=5)
                     container.remove()
                     count += 1

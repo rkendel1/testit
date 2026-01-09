@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from celery.result import AsyncResult
@@ -231,7 +231,7 @@ async def get_session(session_id: str):
 
 
 @app.delete("/api/sessions/{session_id}")
-async def stop_session(session_id: str, background_tasks: BackgroundTasks):
+async def stop_session(session_id: str):
     """
     Stop and cleanup a session
     """
@@ -244,8 +244,8 @@ async def stop_session(session_id: str, background_tasks: BackgroundTasks):
         
         container_id = session["container_id"]
         
-        # Queue cleanup task in background
-        background_tasks.add_task(cleanup_session_task.delay, session_id, container_id)
+        # Queue cleanup task directly (not using BackgroundTasks)
+        cleanup_session_task.delay(session_id, container_id)
         
         return {
             "message": "Session cleanup initiated",

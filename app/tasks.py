@@ -24,6 +24,9 @@ def process_repository(self, repo_url: str) -> Dict:
     4. Build Docker image
     5. Run container
     6. Create session
+    
+    NOTE: Creates a new DockerOrchestrator instance per task.
+    For high-volume scenarios, consider implementing connection pooling.
     """
     task_id = self.request.id
     temp_dir = None

@@ -13,6 +13,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      # WARNING: Mounting Docker socket provides root-level access to host.
+      # This is acceptable for PoC/development but should use Docker-in-Docker
+      # or a more secure container runtime (e.g., Podman, gVisor) in production.
       - /var/run/docker.sock:/var/run/docker.sock
       - ./app:/app/app
     environment:
@@ -26,6 +29,8 @@ services:
   celery-worker:
     build: .
     volumes:
+      # WARNING: Mounting Docker socket provides root-level access to host.
+      # Required for building and running user containers.
       - /var/run/docker.sock:/var/run/docker.sock
       - ./app:/app/app
     environment:

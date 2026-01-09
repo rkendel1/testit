@@ -107,27 +107,41 @@ class TerminalManager:
     async def _receive_from_container(self, websocket: WebSocket, exec_socket):
         """Receive data from container and send to WebSocket"""
         try:
+            loop = asyncio.get_event_loop()
+            
             while True:
-                # Receive data from container (non-blocking)
-                await asyncio.sleep(0.01)  # Small delay to prevent busy waiting
-                
+                # Use run_in_executor to avoid blocking the event loop
                 try:
-                    exec_socket._sock.setblocking(False)
-                    data = exec_socket._sock.recv(4096)
+                    # Read from socket in non-blocking mode with timeout
+                    data = await loop.run_in_executor(
+                        None, 
+                        lambda: self._read_from_socket(exec_socket._sock, timeout=0.1)
+                    )
                     
                     if data:
                         # Send to WebSocket
                         await websocket.send_text(data.decode('utf-8', errors='ignore'))
-                    else:
-                        # Connection closed
+                    elif data == b'':
+                        # Empty data means connection closed
                         break
                         
-                except BlockingIOError:
-                    # No data available, continue
-                    continue
                 except Exception as e:
                     logger.error(f"Error receiving from container: {e}")
                     break
                     
         except Exception as e:
             logger.error(f"Error in receive loop: {e}")
+    
+    def _read_from_socket(self, sock, timeout=0.1):
+        """Read from socket with timeout (runs in thread pool)"""
+        import select
+        
+        # Use select to wait for data with timeout
+        ready, _, _ = select.select([sock], [], [], timeout)
+        
+        if ready:
+            try:
+                return sock.recv(4096)
+            except Exception:
+                return b''
+        return None  # No data available

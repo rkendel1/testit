@@ -228,11 +228,37 @@ https://github.com/vercel/next.js
 
 ## 🔒 Security Considerations
 
-- Containers run with resource limits (CPU, memory)
-- Sessions automatically expire after timeout
-- Docker socket is mounted (⚠️ be cautious in production)
-- CORS is configured (update for production origins)
-- No persistent storage by default
+### ⚠️ Production Security Warnings
+
+1. **Docker Socket Mount**: The current implementation mounts `/var/run/docker.sock` into containers, which provides root-level access to the host Docker daemon. This is acceptable for PoC and development but **should NOT be used in production**. For production:
+   - Use Docker-in-Docker (DinD) with proper isolation
+   - Consider alternative container runtimes (Podman, gVisor)
+   - Implement proper network isolation
+   - Use Kubernetes with proper RBAC instead of direct Docker
+
+2. **Resource Limits**: Containers run with CPU and memory limits to prevent resource exhaustion
+
+3. **Session Timeout**: Sessions automatically expire after timeout to prevent long-running containers
+
+4. **CORS Configuration**: CORS is configured with `allow_origins=["*"]` for development. Update this to specific origins in production
+
+5. **No Authentication**: The current PoC has no authentication. Add authentication before production deployment
+
+6. **Container Security**: 
+   - Containers run as root (should use non-root users in production)
+   - No AppArmor/SELinux profiles configured
+   - No network policies implemented
+
+### Recommendations for Production
+
+- Add user authentication and authorization
+- Implement rate limiting
+- Use proper container orchestration (Kubernetes)
+- Add network isolation between containers
+- Implement audit logging
+- Add vulnerability scanning for user-submitted code
+- Use read-only root filesystems
+- Implement proper secrets management
 
 ## 📝 Project Structure
 
