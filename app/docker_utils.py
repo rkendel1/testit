@@ -25,10 +25,14 @@ def create_docker_client():
         if docker_host:
             # Explicitly pass the base_url to avoid URL parsing issues
             # This handles cases where docker.from_env() might misparse the URL
-            logger.info(f"Using DOCKER_HOST: {docker_host}")
+            # Note: When using explicit base_url, TLS environment variables 
+            # (DOCKER_TLS_VERIFY, DOCKER_CERT_PATH) are not automatically handled.
+            # For this application, we use unix socket which doesn't require TLS.
+            logger.info("Using explicit DOCKER_HOST for Docker client initialization")
             return docker.DockerClient(base_url=docker_host)
         else:
             # Fall back to docker.from_env() which will use default socket
+            # and handle all Docker environment variables automatically
             logger.info("Using docker.from_env() for Docker client initialization")
             return docker.from_env()
     except Exception as e:
