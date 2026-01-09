@@ -3,8 +3,8 @@
 Test script to verify dockerfile_generator.py generates proper Dockerfiles
 This test verifies the fix for debconf errors during apt-get install.
 """
+import sys
 import tempfile
-import os
 from pathlib import Path
 from app.dockerfile_generator import DockerfileGenerator
 from app.models import LanguageType
@@ -120,13 +120,13 @@ if __name__ == '__main__':
         
         if all_passed:
             print("\n=== All Tests Passed! ===")
-            exit(0)
+            sys.exit(0)
         else:
             print("\n=== Some Tests Failed ===")
-            exit(1)
+            sys.exit(1)
             
     except Exception as e:
         print(f"\n✗ Test script failed: {e}")
         import traceback
         traceback.print_exc()
-        exit(1)
+        sys.exit(1)
