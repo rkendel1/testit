@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Test script to verify frontend-backend connection
+# Usage: ./test_connection.sh
+# If script is not executable, run: chmod +x test_connection.sh
 
 echo "======================================"
 echo "Frontend-Backend Connection Test"
@@ -13,9 +15,29 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Helper function to check if backend is healthy
+check_backend_health() {
+    curl -s -f http://localhost:8000/health > /dev/null 2>&1
+    return $?
+}
+
+# Helper function to safely extract JSON value
+# Falls back to simple grep if jq is not available
+safe_json_extract() {
+    local json="$1"
+    local key="$2"
+    
+    if command -v jq &> /dev/null; then
+        echo "$json" | jq -r ".$key" 2>/dev/null
+    else
+        # Fallback: simple grep (less reliable but doesn't require jq)
+        echo "$json" | grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | cut -d'"' -f4
+    fi
+}
+
 # Test 1: Check if backend is running
 echo "Test 1: Checking if backend is accessible..."
-if curl -s -f http://localhost:8000/health > /dev/null 2>&1; then
+if check_backend_health; then
     echo -e "${GREEN}✓${NC} Backend is running on http://localhost:8000"
     BACKEND_RESPONSE=$(curl -s http://localhost:8000/health)
     echo "   Response: $BACKEND_RESPONSE"
@@ -32,7 +54,8 @@ echo "Test 2: Checking backend root endpoint..."
 BACKEND_ROOT=$(curl -s http://localhost:8000/)
 if echo "$BACKEND_ROOT" | grep -q "TestIt"; then
     echo -e "${GREEN}✓${NC} Backend root endpoint is responding"
-    echo "   Message: $(echo $BACKEND_ROOT | jq -r '.message' 2>/dev/null || echo 'OK')"
+    MESSAGE=$(safe_json_extract "$BACKEND_ROOT" "message")
+    echo "   Message: ${MESSAGE:-OK}"
 else
     echo -e "${RED}✗${NC} Backend root endpoint not responding correctly"
 fi
@@ -85,7 +108,7 @@ echo "Summary"
 echo "======================================"
 
 # Final verdict
-if curl -s -f http://localhost:8000/health > /dev/null 2>&1; then
+if check_backend_health; then
     echo -e "${GREEN}Backend is accessible ✓${NC}"
     
     if curl -s -f http://localhost:3000/ > /dev/null 2>&1; then

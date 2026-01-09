@@ -309,6 +309,19 @@ testit/
 
 ## 🐛 Troubleshooting
 
+### Quick Connection Test
+
+Run the automated connection test script:
+```bash
+./test_connection.sh
+```
+
+This will verify:
+- Backend is accessible on port 8000
+- Frontend is accessible on port 3000 (if running)
+- Proxy configuration is working correctly
+- Docker services are running properly
+
 ### Frontend-Backend Connection Issues
 
 **Symptoms:**
