@@ -9,20 +9,24 @@ Error while fetching server API version: Not supported URL scheme http+docker
 This caused the `/health` endpoint to fail with a 503 error and prevented all Docker operations from working.
 
 ## Root Cause
-The issue was caused by a bug in docker-py's URL parsing logic when handling unix socket URLs in the DOCKER_HOST environment variable. The `docker.from_env()` method was not correctly parsing `unix:///var/run/docker.sock`, leading to a malformed URL scheme.
+The issue was caused by an incompatibility between `docker-py 6.1.3` and `urllib3 2.0+`. The docker-py library version 6.x does not support urllib3 2.0, which introduced breaking changes to URL handling. When docker-py 6.x attempts to use urllib3 2.x, it generates the error: `Not supported URL scheme http+docker`.
+
+This incompatibility affects all Docker operations including:
+- Docker client initialization
+- Health check endpoints
+- Container building and running
+- WebSocket connections
 
 ## Solution
-Modified the Docker client initialization in `app/docker_utils.py` to:
-1. Check if DOCKER_HOST is set and is a unix socket URL (`unix://`)
-2. For unix sockets, explicitly pass the URL to `docker.DockerClient(base_url=docker_host)`
-3. For all other cases (TCP connections or no DOCKER_HOST), use `docker.from_env()` which properly handles TLS
+Upgraded the docker library from version 6.1.3 to 7.1.0, which properly supports urllib3 2.0+.
 
 ### Changes Made
-1. **requirements.txt**: Using `docker==6.1.3` (stable version)
+1. **requirements.txt**: Upgraded `docker==6.1.3` to `docker==7.1.0`
 2. **app/docker_utils.py**: 
-   - Added logic to detect unix socket URLs in DOCKER_HOST
-   - Bypass `docker.from_env()` only for unix sockets
-   - Maintain TLS support for TCP connections
+   - Existing logic continues to work correctly with docker 7.1.0
+   - Detects unix socket URLs in DOCKER_HOST
+   - Uses explicit `DockerClient(base_url=...)` for unix sockets
+   - Uses `docker.from_env()` for other cases (maintains TLS support)
 
 ## Verification
 - ✅ Docker client initialization tested and working with unix sockets
