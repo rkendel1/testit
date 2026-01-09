@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from celery.result import AsyncResult
 from typing import List
 import logging
+import threading
 
 from app.models import (
     SubmitRepoRequest, 
@@ -48,8 +49,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize terminal manager
-terminal_manager = TerminalManager()
+# Lazy terminal manager initialization (thread-safe)
+_terminal_manager = None
+_terminal_manager_lock = threading.Lock()
+
+def get_terminal_manager() -> TerminalManager:
+    """Get or create terminal manager instance (thread-safe)"""
+    global _terminal_manager
+    if _terminal_manager is None:
+        with _terminal_manager_lock:
+            # Double-check locking pattern
+            if _terminal_manager is None:
+                _terminal_manager = TerminalManager()
+    return _terminal_manager
 
 
 @app.get("/")
@@ -319,6 +331,7 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
         
         # Handle the terminal session
         logger.info(f"Starting terminal session for {session_id} (container: {container_id})")
+        terminal_manager = get_terminal_manager()
         await terminal_manager.handle_terminal_session(websocket, container_id)
         
     except Exception as e:
