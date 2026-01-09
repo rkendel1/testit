@@ -6,12 +6,9 @@ This test verifies the fix for the "http+docker" URL scheme error.
 import os
 import sys
 
-# Add app to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
-
 def test_docker_client_creation():
     """Test that Docker client can be created successfully"""
-    from docker_utils import create_docker_client
+    from app.docker_utils import create_docker_client
     import docker
     
     print(f"Testing with docker-py version: {docker.__version__}")
