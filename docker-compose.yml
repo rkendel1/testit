@@ -53,5 +53,26 @@ services:
       - redis
     command: celery -A app.celery_app beat --loglevel=info
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      # Allow frontend to connect to backend from browser (client-side)
+      # This is the URL that the user's browser will use
+      - REACT_APP_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+      # Disable host check for development
+      - WDS_SOCKET_PORT=3000
+    depends_on:
+      - api
+    stdin_open: true
+    tty: true
+
 volumes:
   redis-data:

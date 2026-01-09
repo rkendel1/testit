@@ -286,12 +286,15 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
     
     Provides xterm.js compatible WebSocket terminal access
     """
+    logger.info(f"WebSocket connection request for session: {session_id}")
+    
     try:
         # Get session to verify it exists and get container ID
         session_manager = SessionManager()
         session = session_manager.get_session(session_id)
         
         if not session:
+            logger.warning(f"Session not found: {session_id}")
             await websocket.accept()
             await websocket.send_text("Error: Session not found\r\n")
             await websocket.close()
@@ -304,6 +307,7 @@ async def terminal_websocket(websocket: WebSocket, session_id: str):
         exists, status = orchestrator.get_container_status(container_id)
         
         if not exists or status != "running":
+            logger.warning(f"Container not running: {container_id}, status: {status}")
             await websocket.accept()
             await websocket.send_text(f"Error: Container is not running (status: {status})\r\n")
             await websocket.close()

@@ -25,12 +25,18 @@ docker-compose up --build
 3. **Wait for services to start** (watch the logs):
    - ✓ Redis ready
    - ✓ API server running on port 8000
+   - ✓ Frontend UI running on port 3000
    - ✓ Celery worker connected
 
 4. **Verify it's working**:
 ```bash
 curl http://localhost:8000/health
 ```
+
+5. **Access the application**:
+   - Frontend UI: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
 
 ### Option 2: Using Make
 
@@ -62,6 +68,10 @@ curl http://localhost:8000/api/status/{task_id}
 
 ### Using the Frontend
 
+With docker-compose running, the frontend is already available at http://localhost:3000.
+
+**If you want to run the frontend separately for development:**
+
 1. **Install frontend dependencies**:
 ```bash
 cd frontend
@@ -75,13 +85,15 @@ npm start
 
 3. **Open browser**: http://localhost:3000
 
-4. **Submit a repository**:
+**Using the UI:**
+
+1. **Submit a repository**:
    - Enter: `https://github.com/docker/welcome-to-docker`
    - Click "Submit Repository"
    - Wait for build to complete
    - Access the terminal!
 
-5. **Try commands in the terminal**:
+2. **Try commands in the terminal**:
 ```bash
 ls -la
 pwd
