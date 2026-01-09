@@ -55,11 +55,24 @@ const TerminalComponent = ({ sessionId, apiUrl }) => {
     if (!terminal || !sessionId) return;
 
     // Connect to WebSocket
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = apiUrl.replace('http://', '').replace('https://', '');
-    const wsUrl = `${wsProtocol}//${wsHost}/api/terminal/${sessionId}`;
+    // Construct WebSocket URL based on the API URL
+    let wsUrl;
+    
+    // Parse the API URL to get the hostname and port
+    try {
+      const apiUrlObj = new URL(apiUrl);
+      const wsProtocol = apiUrlObj.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = apiUrlObj.host; // includes port if present
+      wsUrl = `${wsProtocol}//${host}/api/terminal/${sessionId}`;
+    } catch (e) {
+      // Fallback for malformed URLs
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = apiUrl.replace('http://', '').replace('https://', '');
+      wsUrl = `${wsProtocol}//${wsHost}/api/terminal/${sessionId}`;
+    }
 
     terminal.writeln('Connecting to container terminal...');
+    terminal.writeln(`WebSocket URL: ${wsUrl}\r\n`);
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -81,12 +94,18 @@ const TerminalComponent = ({ sessionId, apiUrl }) => {
     };
 
     ws.onerror = (error) => {
-      terminal.writeln(`\r\nWebSocket error: ${error.message || 'Connection error'}`);
+      console.error('WebSocket error:', error);
+      terminal.writeln(`\r\n${'\x1b[31m'}WebSocket error: Connection failed${'\x1b[0m'}`);
+      terminal.writeln('Please ensure the backend is running and accessible.\r\n');
       setConnected(false);
     };
 
-    ws.onclose = () => {
-      terminal.writeln('\r\nConnection closed.');
+    ws.onclose = (event) => {
+      console.log('WebSocket closed:', event.code, event.reason);
+      terminal.writeln(`\r\n${'\x1b[33m'}Connection closed.${'\x1b[0m'}`);
+      if (event.code !== 1000) {
+        terminal.writeln(`Close code: ${event.code}, Reason: ${event.reason || 'Unknown'}\r\n`);
+      }
       setConnected(false);
     };
 

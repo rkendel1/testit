@@ -12,6 +12,24 @@ function App() {
   const [error, setError] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [logs, setLogs] = useState('');
+  const [apiHealthy, setApiHealthy] = useState(null);
+
+  // Check API health on mount
+  React.useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const response = await fetch(`${API_URL}/health`, { 
+          method: 'GET',
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        setApiHealthy(response.ok);
+      } catch (err) {
+        console.error('Health check failed:', err);
+        setApiHealthy(false);
+      }
+    };
+    checkHealth();
+  }, []);
 
   const submitRepo = async () => {
     if (!repoUrl.trim()) {
@@ -34,7 +52,8 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to submit: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to submit (${response.status}): ${errorText || response.statusText}`);
       }
 
       const data = await response.json();
@@ -44,7 +63,17 @@ function App() {
       // Poll for status
       pollStatus(data.task_id);
     } catch (err) {
-      setError(err.message);
+      console.error('Submit error:', err);
+      let errorMsg = err.message;
+      
+      // Provide more helpful error messages for common issues
+      if (err.message.includes('Failed to fetch')) {
+        errorMsg = 'Cannot connect to backend API. Please ensure the API is running at ' + API_URL;
+      } else if (err.message.includes('CORS')) {
+        errorMsg = 'CORS error: ' + err.message;
+      }
+      
+      setError(errorMsg);
       setLoading(false);
     }
   };
@@ -54,7 +83,7 @@ function App() {
       try {
         const response = await fetch(`${API_URL}/api/status/${id}`);
         if (!response.ok) {
-          throw new Error('Failed to get status');
+          throw new Error(`Failed to get status (${response.status})`);
         }
 
         const data = await response.json();
@@ -71,8 +100,9 @@ function App() {
           setError('Build failed. Check logs for details.');
         }
       } catch (err) {
+        console.error('Poll status error:', err);
         clearInterval(pollInterval);
-        setError(err.message);
+        setError(`Status check failed: ${err.message}`);
         setLoading(false);
       }
     }, 2000);
@@ -104,6 +134,17 @@ function App() {
       <header className="App-header">
         <h1>TestIt - Ephemeral Container Build System</h1>
         <p>Submit a GitHub repository to build and run it in an ephemeral container</p>
+        <div className="api-info" style={{ fontSize: '0.8em', opacity: 0.7, marginTop: '10px' }}>
+          <span>API: {API_URL}</span>
+          {apiHealthy !== null && (
+            <span style={{ marginLeft: '15px' }}>
+              Status: {apiHealthy ? 
+                <span style={{ color: '#4CAF50' }}>✓ Healthy</span> : 
+                <span style={{ color: '#f44336' }}>✗ Unavailable</span>
+              }
+            </span>
+          )}
+        </div>
       </header>
 
       <div className="container">
